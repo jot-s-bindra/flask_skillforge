@@ -137,39 +137,45 @@ def get_student_details():
         if not client.login(credentials):
             return jsonify({
                 "error": "Login failed",
-                "message": "Invalid credentials"
-            }), 401  
+                "message": "Invalid credentials or connection error"
+            }), 401
 
         response = client.session.get(client.base_url)
 
+        # Get full course details
         courses = client.get_all_courses(response.text)
         summaries = client.get_semester_summary(response.text)
 
-        if not courses:
-            return jsonify({
-                "error": "Data fetch failed",
-                "message": "Could not retrieve academic records."
-            }), 500  
+        # Simplify the response
+        semester_data = {}
+
+        for course in courses:
+            semester = course["semester"]
+            if semester not in semester_data:
+                semester_data[semester] = {
+                    "semester": semester,
+                    "cgpa": summaries.get(str(semester), {}).get("cgpa", "N/A"),
+                    "courses": []
+                }
+
+            semester_data[semester]["courses"].append({
+                "course_name": course["course_name"],
+                "course_code": course["course_code"],
+                "grade": course["grade"]
+            })
 
         return jsonify({
             "status": "success",
             "data": {
-                "courses": courses,
-                "semester_summaries": summaries
+                "semesters": list(semester_data.values())
             }
         })
 
     except requests.RequestException as e:
-        return jsonify({
-            "error": "Connection error",
-            "message": str(e)
-        }), 500  
+        return jsonify({"error": "Connection error", "message": str(e)}), 500
 
     except Exception as e:
-        return jsonify({
-            "error": "Server error",
-            "message": str(e)
-        }), 500  
+        return jsonify({"error": "Server error", "message": str(e)}), 500
 
 
 if __name__ == '__main__':
