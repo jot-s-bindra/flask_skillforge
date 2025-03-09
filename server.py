@@ -2,9 +2,9 @@ from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
 import re
-
+from flask_cors import CORS  
 app = Flask(__name__)
-
+CORS(app, resources={r"/api/*": {"origins": "*"}}, supports_credentials=True)
 class ERPClient:
     def __init__(self, base_url: str = "https://erp.iiita.ac.in"):
         self.base_url = base_url
